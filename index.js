@@ -79,14 +79,20 @@ function getCoveragePercentage(repoName) {
   }
 }
 
-async function getAllMetrics({ repoName, org = 'wolox', provider = 'github', tech }) {
+async function getAllMetrics({ repoName, org = 'wolox', provider = 'github', tech, id }) {
   const codeQuality = executeCodeClimate(repoName);
 
   const codeCoverage = getCoveragePercentage(repoName);
 
   const gitMetrics = await runGitChecks(provider, OAUTH_TOKEN)(repoName, org);
 
-  const metrics = [codeQuality, codeCoverage, ...gitMetrics].filter(({ value }) => !isNaN(value));
+  const pullRequestBody = { pull_requests: gitMetrics.filter((pr) => pr.review_time && pr.pick_up_time) };
+
+  // axiosApi
+  //   .post(`/repositories/${id}/pull_requests`, pullRequestBody, { headers: { Authorization: apiKey } })
+  //   .catch(error => console.log(`Error: ${error}`));
+
+  const metrics = [codeQuality, codeCoverage].filter(({ value }) => !isNaN(value));
 
   const body = {
     env: 'development',
@@ -115,7 +121,7 @@ api
         const downloadUrl = repository.download_url;
         const authUrl = `${downloadUrl.slice(0, httpsIndex)}${OAUTH_TOKEN}@${downloadUrl.slice(httpsIndex)}`;
         shell.exec(`git clone ${authUrl} projects/${repository.name}`);
-        await getAllMetrics({ repoName: repository.name, tech: repository.tech });
+        await getAllMetrics({ repoName: repository.name, tech: repository.tech, , id: repository.id });
         rimraf.sync(`./projects/${repository.name}`);
       } catch (e) {
         console.error(e);
