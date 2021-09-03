@@ -5,6 +5,8 @@ const shell = require('shelljs');
 const rimraf = require('rimraf');
 require('dotenv').config();
 
+const PWD = process.cwd();
+
 const OAUTH_TOKEN = process.env.GITHUB_OAUTH_TOKEN;
 
 const oneMillion = 1000000;
@@ -13,7 +15,7 @@ const hundread = 100;
 
 const api = axios.create({
   baseURL: process.env.API_BASE_URL,
-  timeout: 1000,
+  timeout: 10000,
   headers: { Authorization: process.env.API_KEY }
 });
 
@@ -40,9 +42,19 @@ const groupIssuesInFiles = (acc, { location, remediation_points: remediationPoin
   return { ...acc, [path]: points };
 };
 
+const runCodeclimate = (repoName) => 
+  `docker run \
+  --env CODECLIMATE_CODE="${process.env.HOST_PATH}/projects/${repoName}" \
+  --volume "${process.env.HOST_PATH}/projects/${repoName}":/code \
+  --volume /var/run/docker.sock:/var/run/docker.sock \
+  --volume /tmp/cc:/tmp/cc wolox/codeclimate \
+  > "./projects/${repoName}/code_quality.json"`
+
 function executeCodeClimate(repoName) {
+  shell.exec(`${runCodeclimate(repoName)}`)
+  
   try {
-    const data = JSON.parse(fs.readFileSync(`./${repoName}/code_quality.json`));
+    const data = JSON.parse(fs.readFileSync(`./projects/${repoName}/code_quality.json`));
 
     const reducedByPaths = data.reduce(groupIssuesInFiles, {});
 
@@ -59,7 +71,7 @@ function executeCodeClimate(repoName) {
 
 function getCoveragePercentage(repoName) {
   try {
-    const data = JSON.parse(fs.readFileSync(`./${repoName}/code_coverage.json`));
+    const data = JSON.parse(fs.readFileSync(`./projects/${repoName}/code_coverage.json`));
     return { name: 'code-coverage', value: data.total, version: '1.0' };
   } catch (e) {
     console.error(e);
@@ -108,9 +120,9 @@ api
       try {
         const downloadUrl = repository.download_url;
         const authUrl = `${downloadUrl.slice(0, httpsIndex)}${OAUTH_TOKEN}@${downloadUrl.slice(httpsIndex)}`;
-        shell.exec(`git clone ${authUrl}`);
-        await getAllMetrics({ repoName: repository.name, tech: repository.tech, id: repository.id });
-        rimraf.sync(`./${repository.name}`);
+        shell.exec(`git clone ${authUrl} projects/${repository.name}`);
+        await getAllMetrics({ repoName: repository.name, tech: repository.tech, , id: repository.id });
+        rimraf.sync(`./projects/${repository.name}`);
       } catch (e) {
         console.error(e);
       }
