@@ -72,7 +72,7 @@ function executeCodeClimate(repoName) {
 function getCoveragePercentage(repoName) {
   try {
     const data = JSON.parse(fs.readFileSync(`./projects/${repoName}/code_coverage.json`));
-    return { name: 'code-coverage', value: data.total, version: '1.0' };
+    return { name: 'code-coverage', value: data.lines, version: '1.0' };
   } catch (e) {
     console.error(e);
     return { name: 'code-coverage', value: NaN, version: '1.0' };
