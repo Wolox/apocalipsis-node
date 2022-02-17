@@ -88,9 +88,9 @@ async function getAllMetrics({ repoName, org = 'wolox', provider = 'github', tec
 
   const pullRequestBody = { pull_requests: gitMetrics.filter((pr) => pr.review_time && pr.pick_up_time) };
 
-  // axiosApi
-  //   .post(`/repositories/${id}/pull_requests`, pullRequestBody, { headers: { Authorization: apiKey } })
-  //   .catch(error => console.log(`Error: ${error}`));
+  axiosApi
+    .post(`/repositories/${id}/pull_requests`, pullRequestBody, { headers: { Authorization: apiKey } })
+    .catch(error => console.log(`Error: ${error}`));
 
   const metrics = [codeQuality, codeCoverage].filter(({ value }) => !isNaN(value));
 
@@ -101,9 +101,9 @@ async function getAllMetrics({ repoName, org = 'wolox', provider = 'github', tec
     metrics
   };
   console.log('Metricas a persistir', body);
-  // axiosApi
-  //   .post('/metrics', body, { headers: { Authorization: apiKey } })
-  //   .catch(error => console.log(`Error: ${error}`));
+  axiosApi
+    .post('/metrics', body, { headers: { Authorization: apiKey } })
+    .catch(error => console.log(`Error: ${error}`));
 }
 
 const httpsIndex = 8;
