@@ -88,7 +88,7 @@ async function getAllMetrics({ repoName, org = 'wolox', provider = 'github', tec
 
   const pullRequestBody = { pull_requests: gitMetrics.filter((pr) => pr.review_time && pr.pick_up_time) };
 
-  axiosApi
+  api
     .post(`/repositories/${id}/pull_requests`, pullRequestBody, { headers: { Authorization: apiKey } })
     .catch(error => console.log(`Error: ${error}`));
 
@@ -101,7 +101,7 @@ async function getAllMetrics({ repoName, org = 'wolox', provider = 'github', tec
     metrics
   };
   console.log('Metricas a persistir', body);
-  axiosApi
+  api
     .post('/metrics', body, { headers: { Authorization: apiKey } })
     .catch(error => console.log(`Error: ${error}`));
 }
