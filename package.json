@@ -16,7 +16,7 @@
     "dotenv": "^10.0.0",
     "minimist": "^1.2.5",
     "rimraf": "^3.0.2",
-    "shelljs": "^0.8.4"
+    "shelljs": "^0.8.5"
   },
   "devDependencies": {
     "@wolox/eslint-config": "^1.0.0",
