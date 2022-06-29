@@ -47,11 +47,42 @@ const runCodeclimate = (repoName) =>
   --env CODECLIMATE_CODE="${process.env.HOST_PATH}/projects/${repoName}" \
   --volume "${process.env.HOST_PATH}/projects/${repoName}":/code \
   --volume /var/run/docker.sock:/var/run/docker.sock \
-  --volume /tmp/cc:/tmp/cc wolox/codeclimate \
-  > "./projects/${repoName}/code_quality.json"`
+  --volume /tmp/cc:/tmp/cc 480893542162.dkr.ecr.us-east-1.amazonaws.com/codeclimate:latest \
+  > "./projects/${repoName}/code_quality.json" 2>"./projects/${repoName}/code_quality.error"`
+
+const runCatErrorLog = (repoName) => 
+  `cat "./projects/${repoName}/code_quality.error"`
 
 function executeCodeClimate(repoName) {
+
+  var cproc = require("child_process");
+
+  var args = [
+    'run', 
+    '--env', `CODECLIMATE_CODE="${process.env.HOST_PATH}/projects/${repoName}"`, 
+    '--volume', `"${process.env.HOST_PATH}/projects/${repoName}":/code`, 
+    '--volume', '/var/run/docker.sock:/var/run/docker.sock',
+    '--volume', '/tmp/cc:/tmp/cc', 
+    '480893542162.dkr.ecr.us-east-1.amazonaws.com/codeclimate:latest'
+  ]
+
+  proc = cproc.spawn("docker", args);
+  
+  proc.stdout.on("data", function(res) { 
+    console.log("Data received: " + res);
+  });
+
   shell.exec(`${runCodeclimate(repoName)}`)
+  
+  fs.readFile(`./projects/${repoName}/code_quality.error`, 'utf8', (err, data) => {
+    if (err) {
+      console.error(err);
+      return;
+    }
+    console.log(data);
+  });
+
+  shell.exec(`${runCatErrorLog(repoName)}`)
   
   try {
     const data = JSON.parse(fs.readFileSync(`./projects/${repoName}/code_quality.json`));
@@ -89,7 +120,7 @@ async function getAllMetrics({ repoName, org = 'wolox', provider = 'github', tec
   const pullRequestBody = { pull_requests: gitMetrics.filter((pr) => pr.review_time && pr.pick_up_time) };
 
   api
-    .post(`/repositories/${id}/pull_requests`, pullRequestBody, { headers: { Authorization: apiKey } })
+    .post(`/repositories/${id}/pull_requests`, pullRequestBody)
     .catch(error => console.log(`Error: ${error}`));
 
   const metrics = [codeQuality, codeCoverage].filter(({ value }) => !isNaN(value));
@@ -102,7 +133,7 @@ async function getAllMetrics({ repoName, org = 'wolox', provider = 'github', tec
   };
   console.log('Metricas a persistir', body);
   api
-    .post('/metrics', body, { headers: { Authorization: apiKey } })
+    .post('/metrics', body)
     .catch(error => console.log(`Error: ${error}`));
 }
 
@@ -120,8 +151,9 @@ api
       try {
         const downloadUrl = repository.download_url;
         const authUrl = `${downloadUrl.slice(0, httpsIndex)}${OAUTH_TOKEN}@${downloadUrl.slice(httpsIndex)}`;
+        console.log(authUrl);
         shell.exec(`git clone ${authUrl} projects/${repository.name}`);
-        await getAllMetrics({ repoName: repository.name, tech: repository.tech, , id: repository.id });
+        await getAllMetrics({ repoName: repository.name, tech: repository.tech, id: repository.id });
         rimraf.sync(`./projects/${repository.name}`);
       } catch (e) {
         console.error(e);
